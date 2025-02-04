@@ -14,5 +14,5 @@ IS_DISABLED = env.bool(
 )  # If True then requests won't be recorded
 
 DEBUG_MODE = env.bool(
-    "DEBUG_MODE", default=False
+    "DEBUG_MODE", default=True
 )  # Set to True to see commandline output
