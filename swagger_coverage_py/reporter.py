@@ -72,39 +72,25 @@ class CoverageReporter:
             )
 
     def generate_report(self):
-        inner_location = "swagger-coverage-commandline/bin/swagger-coverage-commandline"
-        
-        cmd_path = os.path.join(os.path.dirname(__file__), inner_location)
-        assert Path(
-            cmd_path
-        ).exists(), (
-            f"No commandline tools is found in following locations:\n{cmd_path}\n"
-        )
+        # Путь до swagger-coverage-commandline
+        inner_location = Path("swagger-coverage-commandline") / "bin" / "swagger-coverage-commandline"
+        cmd_path = Path(__file__).parent / inner_location
+
+        # Проверка существования файла
+        assert cmd_path.exists(), f"Не найден инструмент командной строки по следующему пути:\n{cmd_path}"
+
+        # Определяем базовую команду
+        base_command = [cmd_path, "-s", self.swagger_doc_file, "-i", self.output_dir]
+        if self.swagger_coverage_config:
+            base_command.extend(["-c", self.swagger_coverage_config])
 
         if platform.system() == "Windows":
             git_bash_path = "C:/Program Files/Git/bin/bash.exe"
-            assert Path(git_bash_path).exists(), f"File not found: {git_bash_path}"
-            command = [git_bash_path, "-s", self.swagger_doc_file, "-i", self.output_dir]
-
-            file_path = Path(__file__).resolve()
-            target_directory = file_path.parents[4]
-
-            # Копируем файлы в целевую директорию
-            shutil.copy(cmd_path, target_directory)
-            shutil.copy(
-                file_path.parent / 'swagger-coverage-commandline' / 'bin' / 'swagger-coverage-commandline.bat',
-                target_directory
-                )
-
-        # Adjust the file paths for Unix (Linux/MacOS)
+            command = [git_bash_path, "-c", ' '.join(f'"{arg}"' for arg in base_command)]
         else:
-            command = [cmd_path, "-s", self.swagger_doc_file, "-i", self.output_dir]
+            command = base_command
 
-        if self.swagger_coverage_config:
-            command.extend(["-c", self.swagger_coverage_config])
-
-        
-        # Suppress all output if not in debug mode
+        # Запуск команды
         if not DEBUG_MODE:
             with open(os.devnull, 'w') as devnull:
                 subprocess.run(command, stdout=devnull, stderr=devnull)
