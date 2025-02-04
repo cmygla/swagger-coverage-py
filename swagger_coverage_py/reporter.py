@@ -80,13 +80,29 @@ class CoverageReporter:
         ).exists(), (
             f"No commandline tools is found in following locations:\n{cmd_path}\n"
         )
-        command = [cmd_path, "-s", self.swagger_doc_file, "-i", self.output_dir]
+
+        if platform.system() == "Windows":
+            git_bash_path = "C:/Program Files/Git/bin/bash.exe"
+            assert Path(git_bash_path).exists(), f"File not found: {git_bash_path}"
+            command = [git_bash_path, "-s", self.swagger_doc_file, "-i", self.output_dir]
+
+            file_path = Path(__file__).resolve()
+            target_directory = file_path.parents[4]
+
+            # Копируем файлы в целевую директорию
+            shutil.copy(cmd_path, target_directory)
+            shutil.copy(
+                file_path.parent / 'swagger-coverage-commandline' / 'bin' / 'swagger-coverage-commandline.bat',
+                target_directory
+                )
+
+        # Adjust the file paths for Unix (Linux/MacOS)
+        else:
+            command = [cmd_path, "-s", self.swagger_doc_file, "-i", self.output_dir]
+
         if self.swagger_coverage_config:
             command.extend(["-c", self.swagger_coverage_config])
 
-        # Adjust the file paths for Windows
-        if platform.system() == "Windows":
-            command = [arg.replace("/", "\\") for arg in command]
         
         # Suppress all output if not in debug mode
         if not DEBUG_MODE:
