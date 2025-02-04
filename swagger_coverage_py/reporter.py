@@ -72,39 +72,34 @@ class CoverageReporter:
             )
 
     def generate_report(self):
-        inner_location = "swagger-coverage-commandline/bin/swagger-coverage-commandline"
-        
-        cmd_path = os.path.join(os.path.dirname(__file__), inner_location)
-        assert Path(
-            cmd_path
-        ).exists(), (
-            f"No commandline tools is found in following locations:\n{cmd_path}\n"
-        )
+        # Путь до swagger-coverage-commandline
+        inner_location = Path("swagger-coverage-commandline") / "bin" / "swagger-coverage-commandline"
+        cmd_path = Path(__file__).parent / inner_location
 
-        if platform.system() == "Windows":
-            git_bash_path = "C:/Program Files/Git/bin/bash.exe"
-            assert Path(git_bash_path).exists(), f"File not found: {git_bash_path}"
-            command = [git_bash_path, "-s", self.swagger_doc_file, "-i", self.output_dir]
+        # Проверка существования файла
+        assert cmd_path.exists(), f"Не найден инструмент командной строки по следующему пути:\n{cmd_path}"
 
-            file_path = Path(__file__).resolve()
-            target_directory = file_path.parents[4]
-
-            # Копируем файлы в целевую директорию
-            shutil.copy(cmd_path, target_directory)
-            shutil.copy(
-                file_path.parent / 'swagger-coverage-commandline' / 'bin' / 'swagger-coverage-commandline.bat',
-                target_directory
-                )
-
-        # Adjust the file paths for Unix (Linux/MacOS)
-        else:
-            command = [cmd_path, "-s", self.swagger_doc_file, "-i", self.output_dir]
-
+        # Формирование команды
+        command = [str(cmd_path), "-s", str(self.swagger_doc_file), "-i", str(self.output_dir)]
         if self.swagger_coverage_config:
-            command.extend(["-c", self.swagger_coverage_config])
+            command += ["-c", str(self.swagger_coverage_config)]
 
-        
-        # Suppress all output if not in debug mode
+        # Специальная обработка для Windows
+        if platform.system() == "Windows":
+            # Используем Git Bash
+            git_bash_path = r"C:\Program Files\Git\bin\bash.exe"
+            command = [git_bash_path, "-c", f'"{cmd_path}" -s "{self.swagger_doc_file}" -i "{self.output_dir}"']
+            if self.swagger_coverage_config:
+                command.append(f'-c "{self.swagger_coverage_config}"')
+
+            # Обработка путей
+            root_folder = Path(__file__).resolve().parents[4]
+            os.chdir(str(root_folder))  # Переходим в корневую папку
+            shutil.copy(str(cmd_path), str(root_folder))  # Копируем исполняемый файл
+            bat_path = Path(__file__).parent / inner_location.with_suffix('.bat')
+            shutil.copy(str(bat_path), str(root_folder))  # Копируем .bat файл
+
+        # Запуск команды
         if not DEBUG_MODE:
             with open(os.devnull, 'w') as devnull:
                 subprocess.run(command, stdout=devnull, stderr=devnull)
