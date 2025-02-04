@@ -72,25 +72,35 @@ class CoverageReporter:
             )
 
     def generate_report(self):
-        # Путь до swagger-coverage-commandline
-        inner_location = Path("swagger-coverage-commandline") / "bin" / "swagger-coverage-commandline"
-        cmd_path = Path(__file__).parent / inner_location
+        inner_location = "swagger-coverage-commandline/bin/swagger-coverage-commandline"
 
-        # Проверка существования файла
-        assert cmd_path.exists(), f"Не найден инструмент командной строки по следующему пути:\n{cmd_path}"
+        cmd_path = os.path.join(os.path.dirname(__file__), inner_location)
+        assert Path(
+            cmd_path
+        ).exists(), (f"No commandline tools is found in following locations:\n{cmd_path}\n")
 
-        # Определяем базовую команду
-        base_command = [cmd_path, "-s", self.swagger_doc_file, "-i", self.output_dir]
+        # Определяем команду для запуска
+        command = [cmd_path, "-s", self.swagger_doc_file, "-i", self.output_dir]
         if self.swagger_coverage_config:
-            base_command.extend(["-c", self.swagger_coverage_config])
+            command.extend(["-c", self.swagger_coverage_config])
 
         if platform.system() == "Windows":
+            # Указываем путь к Git Bash
             git_bash_path = "C:/Program Files/Git/bin/bash.exe"
-            command = [git_bash_path, "-c", ' '.join(f'"{arg}"' for arg in base_command)]
-        else:
-            command = base_command
+            command = [git_bash_path, "-c", f'"{cmd_path}" -s "{self.swagger_doc_file}" -i "{self.output_dir}"']
+            if self.swagger_coverage_config:
+                command.append(f'-c "{self.swagger_coverage_config}"')
 
-        # Запуск команды
+            # Обрабатываем пути, если нужно
+            os.chdir(Path(__file__).resolve().parents[4])  # Переход в корневую папку
+            shutil.copy(cmd_path, os.getcwd())  # Копируем исполняемый файл в текущую директорию
+            shutil.copy(
+                os.path.join(
+                    os.path.dirname(__file__), 'swagger-coverage-commandline', 'bin', 'swagger-coverage-commandline.bat'
+                    ), os.getcwd()
+                )
+
+        # Suppress all output if not in debug mode
         if not DEBUG_MODE:
             with open(os.devnull, 'w') as devnull:
                 subprocess.run(command, stdout=devnull, stderr=devnull)
