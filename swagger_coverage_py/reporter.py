@@ -75,26 +75,19 @@ class CoverageReporter:
             cmd_path
         ).exists(), (f"No commandline tools is found in following locations:\n{cmd_path}\n")
 
-        # Определяем команду для запуска
-        command = [cmd_path, "-s", self.swagger_doc_file, "-i", self.output_dir]
+        # Определяем базовую команду
+        base_command = [cmd_path, "-s", self.swagger_doc_file, "-i", self.output_dir]
+
+        # Добавляем конфигурацию покрытия, если она задана
         if self.swagger_coverage_config:
-            command.extend(["-c", self.swagger_coverage_config])
+            base_command.extend(["-c", self.swagger_coverage_config])
 
         if platform.system() == "Windows":
-            # Указываем путь к Git Bash
-            git_bash_path = "C:/Program Files/Git/bin/bash.exe"
-            command = [git_bash_path, "-c", f'"{cmd_path}" -s "{self.swagger_doc_file}" -i "{self.output_dir}"']
-            if self.swagger_coverage_config:
-                command.append(f'-c "{self.swagger_coverage_config}"')
-
-            # Обрабатываем пути, если нужно
-            os.chdir(Path(__file__).resolve().parents[4])  # Переход в корневую папку
-            shutil.copy(cmd_path, os.getcwd())  # Копируем исполняемый файл в текущую директорию
-            shutil.copy(
-                os.path.join(
-                    os.path.dirname(__file__), 'swagger-coverage-commandline', 'bin', 'swagger-coverage-commandline.bat'
-                    ), os.getcwd()
-                )
+            # Получаем путь к Git Bash из переменных среды
+            git_bash_path = os.environ.get("GIT_BASH_PATH", "C:/Program Files/Git/bin/bash.exe")
+            command = [git_bash_path, "-c", ' '.join(f'"{arg}"' for arg in base_command)]
+        else:
+            command = base_command
 
         # Suppress all output if not in debug mode
         if not DEBUG_MODE:
