@@ -1,9 +1,9 @@
 import json
 import os
+import pathlib
 import platform
 import re
 import urllib
-from pathlib import Path
 
 import yaml
 from faker import Faker
@@ -134,18 +134,14 @@ class ApiDocsManagerBase:
     def write_schema(self):
         schema_dict = self._get_schema()
         rnd = Faker().pystr(min_chars=5, max_chars=5)
-        file_name = f"{self._method.upper()}_{self._uri.formatted[1::]}".replace(
+        file_name = f"{self._method.upper()} {self._uri.formatted[1::]}".replace(
             "/", "-"
         ).replace(":", "_")
         path_ = f"swagger-coverage-output/{self.__get_output_subdir()}"
-        if platform.system() == "Windows":
-            path_ = (Path(__file__).resolve().parents[5]).joinpath(path_)
-            print('Путь до папки swagger-coverage-output', path_)
-            path_.mkdir(parents=True, exist_ok=True)
-        else:
-            Path(path_).mkdir(parents=True, exist_ok=True)
+        pathlib.Path(path_).mkdir(parents=True, exist_ok=True)
         file_path = f"{path_}/{file_name}".split("?")[0]
-        file_path = f"{file_path}_({rnd}).{API_DOCS_FORMAT}"
+        file_path = f"{file_path} ({rnd}).{API_DOCS_FORMAT}"
+
         try:
             with open(file_path, "w+") as file:
                 if API_DOCS_FORMAT == "yaml":
