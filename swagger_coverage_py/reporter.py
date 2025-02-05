@@ -83,12 +83,13 @@ class CoverageReporter:
             base_command.extend(["-c", self.swagger_coverage_config])
 
         if platform.system() == "Windows":
+            print("Windows")
             # Получаем путь к Git Bash из переменных среды
             git_bash_path = os.environ.get("GIT_BASH_PATH", "C:/Program Files/Git/bin/bash.exe")
             command = [git_bash_path, "-c", ' '.join(f'"{arg}"' for arg in base_command)]
         else:
             command = base_command
-
+        print(command)
         # Suppress all output if not in debug mode
         if not DEBUG_MODE:
             with open(os.devnull, 'w') as devnull:
