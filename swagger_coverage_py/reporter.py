@@ -88,6 +88,7 @@ class CoverageReporter:
             git_bash_path = os.environ.get("GIT_BASH_PATH", "C:/Program Files/Git/bin/bash.exe")
             command = [git_bash_path, "-c", ' '.join(f'"{arg}"' for arg in base_command)]
         else:
+            subprocess.run(['chmod', '+x', cmd_path], check=True)
             command = base_command
         print(command)
         # Suppress all output if not in debug mode
