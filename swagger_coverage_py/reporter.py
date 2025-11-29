@@ -68,35 +68,19 @@ class CoverageReporter:
                 self.swagger_doc_file, api_doc_data=response, paths_to_delete=self.ignored_paths, )
 
     def generate_report(self):
-        inner_location = "swagger-coverage-commandline/bin/swagger-coverage-commandline"
+        base_dir = os.path.join(os.path.dirname(__file__), "swagger-coverage-commandline")
+        lib_path = os.path.join(base_dir, "lib", "*")
 
-        cmd_path = os.path.join(os.path.dirname(__file__), inner_location)
-        assert Path(
-            cmd_path
-        ).exists(), (f"No commandline tools is found in following locations:\n{cmd_path}\n")
-
-        # Определяем базовую команду
-        base_command = [cmd_path, "-s", self.swagger_doc_file, "-i", self.output_dir]
-
-        # Добавляем конфигурацию покрытия, если она задана
+        classpath = lib_path.replace("/", os.sep)
+        command = ["java", "-cp", classpath, "com.github.viclovsky.swagger.coverage.CommandLine", "-s",
+            self.swagger_doc_file, "-i", self.output_dir, ]
         if self.swagger_coverage_config:
-            base_command.extend(["-c", self.swagger_coverage_config])
+            command.extend(["-c", self.swagger_coverage_config])
 
-        if platform.system() == "Windows":
-            print("Windows")
-            # Получаем путь к Git Bash из переменных среды
-            git_bash_path = os.environ.get("GIT_BASH_PATH", "C:/Program Files/Git/bin/bash.exe")
-            command = [git_bash_path, "-c", ' '.join(f'"{arg}"' for arg in base_command)]
-        else:
-            subprocess.run(['chmod', '+x', cmd_path], check=True)
-            command = base_command
-        print(command)
-        # Suppress all output if not in debug mode
         if not DEBUG_MODE:
-            with open(os.devnull, 'w') as devnull:
-                subprocess.run(command, stdout=devnull, stderr=devnull)
+            subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
         else:
-            subprocess.run(command)
+            subprocess.run(command, check=True)
 
     def cleanup_input_files(self):
         shutil.rmtree(self.output_dir, ignore_errors=True)
